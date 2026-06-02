@@ -4,7 +4,7 @@
   "scripts": {
     "build": "prisma generate && nest build",
     "dev": "nest start --watch",
-    "start": "node dist/main",
+    "start": "prisma db push --skip-generate --accept-data-loss && node dist/main",
     "start:prod": "prisma db push --skip-generate --accept-data-loss && node dist/main",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
