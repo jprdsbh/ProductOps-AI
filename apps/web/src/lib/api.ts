@@ -1,10 +1,20 @@
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3002';
 
+// No browser usamos caminho RELATIVO (/api...): a requisição vai para o próprio
+// domínio do web e o Next faz o rewrite para a API. Assim o cookie de sessão é
+// gravado no domínio do web (mesma origem) — que é onde o middleware o lê.
+// Chamar a URL absoluta da API gravaria o cookie no domínio da API (cross-origin)
+// e o login não "pegaria".
+function buildUrl(path: string): string {
+  if (typeof window !== 'undefined') return `/api${path}`;
+  return `${API}/api${path}`;
+}
+
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const res = await fetch(`${API}/api${path}`, {
+  const res = await fetch(buildUrl(path), {
     ...options,
     credentials: 'include',
     headers: {
