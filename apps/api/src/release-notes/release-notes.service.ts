@@ -71,7 +71,12 @@ export class ReleaseNotesService {
     const [data, total] = await Promise.all([
       this.prisma.releaseNote.findMany({
         where: { status: 'PENDING_APPROVAL' },
-        orderBy: { createdAt: 'desc' },
+        // Task mais antiga primeiro (fila FIFO): pela data em que subiu (releasedAt),
+        // com fallback para a data de criação.
+        orderBy: [
+          { releasedAt: { sort: 'asc', nulls: 'last' } },
+          { createdAt: 'asc' },
+        ],
         skip,
         take: limit,
       }),
