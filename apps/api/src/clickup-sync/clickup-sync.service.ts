@@ -217,14 +217,20 @@ export class ClickupSyncService {
       ? this.buildCompositeId(sprintName ?? '', unit.epicName ?? 'epic')
       : unit.anchor.id;
 
-    // Idempotência + backfill da data de release
+    // Idempotência + backfill (data de release e ID amigável do ClickUp)
     const existing = await this.prisma.releaseNote.findUnique({ where: { clickupTaskId } });
     if (existing) {
+      const data: any = {};
       if (!existing.releasedAt) {
         const closedAt = this.latestClosedDate(unit.members);
-        if (closedAt) {
-          await this.prisma.releaseNote.update({ where: { id: existing.id }, data: { releasedAt: closedAt } });
-        }
+        if (closedAt) data.releasedAt = closedAt;
+      }
+      if (!existing.customId) {
+        const cid = unit.anchor?.custom_id || unit.members.find((m) => m.custom_id)?.custom_id;
+        if (cid) data.customId = cid;
+      }
+      if (Object.keys(data).length) {
+        await this.prisma.releaseNote.update({ where: { id: existing.id }, data });
       }
       return 'skipped';
     }
@@ -270,10 +276,14 @@ export class ClickupSyncService {
     const version = this.extractVersion(lead.custom_fields ?? []);
     const rawTitle = isEpic ? unit.epicName ?? anchorFull.name : anchorFull.name;
 
+    // ID amigável do ClickUp (ex.: DEV-919) — preenche automático
+    const customId = anchorFull.custom_id || lead.custom_id || null;
+
     const note = await this.prisma.releaseNote.create({
       data: {
         clickupTaskId,
         clickupTaskUrl: (lead.url ?? anchorFull.url) ?? null,
+        customId,
         rawTitle,
         rawDescription: rawDescription || rawTitle,
         aiGenerated: '',
