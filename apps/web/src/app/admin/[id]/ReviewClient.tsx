@@ -3,11 +3,50 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { ReleaseNoteDto } from '@techdirector/shared';
 import { api } from '@/lib/api';
 
 const TBOT_URL = process.env.NEXT_PUBLIC_TBOT_URL ?? 'http://localhost:8000';
+
+// Renderiza o markdown leve da nota (negrito, bullets, ---, título) de forma segura.
+function renderNote(md: string) {
+  const lines = (md || '').split('\n');
+  let firstContentSeen = false;
+  return lines.map((line, i) => {
+    const t = line.trim();
+    if (t === '---') return <hr key={i} className="my-3 border-gray-200 dark:border-gray-700" />;
+    if (!t) return <div key={i} className="h-2" />;
+
+    const renderInline = (s: string) =>
+      s.split(/(\*\*[^*]+\*\*)/g).map((p, j) =>
+        p.startsWith('**') && p.endsWith('**')
+          ? <strong key={j} className="font-semibold text-gray-900 dark:text-gray-100">{p.slice(2, -2)}</strong>
+          : <span key={j}>{p}</span>,
+      );
+
+    if (t.startsWith('- ') || t.startsWith('• ')) {
+      return (
+        <div key={i} className="flex gap-2 items-start">
+          <span className="text-[#DDC444] mt-0.5">▸</span>
+          <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{renderInline(t.replace(/^[-•]\s+/, ''))}</p>
+        </div>
+      );
+    }
+
+    if (!firstContentSeen) {
+      firstContentSeen = true;
+      return <p key={i} className="text-lg font-bold text-gray-900 dark:text-white leading-snug">{renderInline(line)}</p>;
+    }
+    return <p key={i} className="text-gray-600 dark:text-gray-300 leading-relaxed">{renderInline(line)}</p>;
+  });
+}
+
+const STATUS_META: Record<string, { label: string; cls: string }> = {
+  PENDING_APPROVAL: { label: 'Pendente', cls: 'bg-yellow-100 text-yellow-700' },
+  PUBLISHED: { label: 'Publicado', cls: 'bg-green-100 text-green-700' },
+  DRAFT: { label: 'Rascunho', cls: 'bg-gray-100 text-gray-600' },
+  ARCHIVED: { label: 'Arquivado', cls: 'bg-gray-100 text-gray-500' },
+};
 
 export default function ReviewClient({ note }: { note: ReleaseNoteDto }) {
   const router = useRouter();
@@ -18,275 +57,160 @@ export default function ReviewClient({ note }: { note: ReleaseNoteDto }) {
   const [error, setError] = useState('');
 
   const isEditable = note.status === 'PENDING_APPROVAL' || note.status === 'DRAFT';
+  const status = STATUS_META[note.status] ?? STATUS_META.DRAFT;
 
   async function handleAction(action: () => Promise<void>, key: string) {
-    setLoading(key);
-    setError('');
-    try {
-      await action();
-      router.push('/admin');
-      router.refresh();
-    } catch (err: any) {
-      setError(err.message ?? 'Erro inesperado');
-    } finally {
-      setLoading(null);
-    }
+    setLoading(key); setError('');
+    try { await action(); router.push('/admin'); router.refresh(); }
+    catch (err: any) { setError(err.message ?? 'Erro inesperado'); }
+    finally { setLoading(null); }
   }
 
   async function handleRegenerate() {
-    setLoading('regen');
-    setError('');
-    try {
-      const updated = await api.regenerate(note.id) as ReleaseNoteDto;
-      setText(updated.aiGenerated);
-    } catch (err: any) {
-      setError(err.message ?? 'Erro ao regenerar');
-    } finally {
-      setLoading(null);
-    }
+    setLoading('regen'); setError('');
+    try { const u = await api.regenerate(note.id) as ReleaseNoteDto; setText(u.aiGenerated); }
+    catch (err: any) { setError(err.message ?? 'Erro ao regenerar'); }
+    finally { setLoading(null); }
   }
 
   async function handleCaptureViaTBot() {
-    setLoading('tbot');
-    setError('');
+    setLoading('tbot'); setError('');
     try {
       const res = await fetch(`${TBOT_URL}/screenshot`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          description: note.rawDescription,
-          suggested_capture: note.suggestedCapture ?? '',
-        }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: note.rawDescription, suggested_capture: note.suggestedCapture ?? '' }),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail ?? 'Erro ao capturar screenshot');
-      }
+      if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail ?? 'Erro ao capturar'); }
       const data = await res.json() as { imageUrl: string };
-      setImageUrl(data.imageUrl);
-      await api.updateImage(note.id, data.imageUrl);
-    } catch (err: any) {
-      setError(err.message ?? 'Erro ao capturar via TBot');
-    } finally {
-      setLoading(null);
-    }
+      setImageUrl(data.imageUrl); await api.updateImage(note.id, data.imageUrl);
+    } catch (err: any) { setError(err.message ?? 'Erro ao capturar via TBot'); }
+    finally { setLoading(null); }
   }
 
   async function handleImageUrlBlur() {
-    if (imageUrl !== (note.imageUrl ?? '')) {
-      try {
-        await api.updateImage(note.id, imageUrl);
-      } catch {
-        // silently ignore
-      }
-    }
+    if (imageUrl !== (note.imageUrl ?? '')) { try { await api.updateImage(note.id, imageUrl); } catch {} }
   }
-
   async function handleCustomIdBlur() {
-    if (customId !== (note.customId ?? '')) {
-      try {
-        await api.updateCustomId(note.id, customId);
-      } catch {
-        // silently ignore
-      }
-    }
+    if (customId !== (note.customId ?? '')) { try { await api.updateCustomId(note.id, customId); } catch {} }
   }
 
   return (
-    <div>
-      <Link href="/admin" className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition mb-6 inline-flex items-center gap-1">
-        ← Voltar
-      </Link>
+    <div className="space-y-4">
+      {/* ── Barra de ações (fixa) ── */}
+      <div className="sticky top-[3.75rem] z-10 -mx-4 px-4 py-3 bg-gray-50/90 dark:bg-gray-950/90 backdrop-blur border-b border-gray-200 dark:border-gray-800">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3 min-w-0">
+            <Link href="/admin" className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition flex items-center gap-1">← Voltar</Link>
+            <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${status.cls}`}>{status.label}</span>
+            <p className="text-sm font-medium truncate hidden sm:block">{note.rawTitle}</p>
+          </div>
+          {isEditable && (
+            <div className="flex items-center gap-2">
+              <button onClick={handleRegenerate} disabled={!!loading}
+                className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-400 transition disabled:opacity-50">
+                {loading === 'regen' ? 'Regenerando...' : '↺ Regenerar'}
+              </button>
+              <button onClick={() => handleAction(() => api.reject(note.id) as Promise<void>, 'reject')} disabled={!!loading}
+                className="text-sm px-3 py-1.5 rounded-lg border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition disabled:opacity-50">
+                {loading === 'reject' ? 'Rejeitando...' : 'Rejeitar'}
+              </button>
+              <button onClick={() => handleAction(() => api.approve(note.id, text, imageUrl || undefined) as Promise<void>, 'approve')} disabled={!!loading || !text.trim()}
+                className="text-sm px-4 py-1.5 rounded-lg bg-[#DDC444] hover:bg-[#c9b23c] text-gray-900 font-semibold transition disabled:opacity-50">
+                {loading === 'approve' ? 'Publicando...' : '✓ Aprovar e Publicar'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
 
-      <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
 
-        {/* Left: Raw task data */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-sm">Tarefa Original (ClickUp)</h2>
+      {/* ── Workspace: editor | pré-visualização ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Editor */}
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 flex flex-col">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-semibold text-sm flex items-center gap-1.5"><span>✏️</span> Editar nota</h2>
+            <span className="text-xs text-gray-400">{text.length} caracteres</span>
+          </div>
+          {isEditable ? (
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              className="w-full flex-1 min-h-[60vh] px-3.5 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-[#DDC444] focus:border-[#DDC444] leading-relaxed"
+              placeholder="Texto da release note..."
+            />
+          ) : (
+            <div className="flex-1 min-h-[60vh] bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm font-mono whitespace-pre-wrap overflow-auto">{note.finalText ?? note.aiGenerated}</div>
+          )}
+        </div>
+
+        {/* Pré-visualização */}
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 flex flex-col">
+          <h2 className="font-semibold text-sm mb-2 flex items-center gap-1.5"><span>👁️</span> Pré-visualização <span className="text-xs text-gray-400 font-normal">(como vai aparecer)</span></h2>
+          <div className="flex-1 min-h-[60vh] overflow-auto rounded-lg border border-gray-100 dark:border-gray-800 bg-[#FAFAFA] dark:bg-gray-950 p-5 space-y-1">
+            {renderNote(text)}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Contexto: tarefa original | imagem ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Tarefa original */}
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-sm flex items-center gap-1.5"><span>📌</span> Tarefa original (ClickUp)</h3>
             {note.clickupTaskUrl && (
-              <a
-                href={note.clickupTaskUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                Ver no ClickUp ↗
-              </a>
+              <a href={note.clickupTaskUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Ver no ClickUp ↗</a>
             )}
           </div>
-
-          <div className="space-y-4 text-sm">
+          <div className="space-y-3 text-sm">
             <div className="flex gap-4 items-end">
               <div className="flex-1">
-                <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide font-medium mb-1">ID da Tarefa</p>
-                <input
-                  type="text"
-                  value={customId}
-                  onChange={(e) => setCustomId(e.target.value.toUpperCase())}
-                  onBlur={handleCustomIdBlur}
+                <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">ID amigável</p>
+                <input type="text" value={customId} onChange={(e) => setCustomId(e.target.value.toUpperCase())} onBlur={handleCustomIdBlur}
                   placeholder="ex: DEV-1001"
-                  className="w-full px-2 py-1 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm font-mono font-semibold text-[#8B7A0A] focus:outline-none focus:ring-2 focus:ring-[#DDC444]/50"
-                />
+                  className="w-full px-2 py-1 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm font-mono font-semibold text-[#8B7A0A] focus:outline-none focus:ring-2 focus:ring-[#DDC444]/50" />
               </div>
-              <div>
-                <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide font-medium mb-1">ID ClickUp</p>
-                <p className="font-mono text-gray-400 dark:text-gray-500 text-xs">{note.clickupTaskId}</p>
-              </div>
-            </div>
-            <div>
-              <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide font-medium mb-1">Título</p>
-              <p className="font-medium">{note.rawTitle}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide font-medium mb-1">Descrição Técnica</p>
-              <p className="text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap">
-                {note.rawDescription || '—'}
-              </p>
-            </div>
-            <div className="flex gap-4">
-              {note.category && (
-                <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">Categoria</p>
-                  <p>{note.category}</p>
-                </div>
-              )}
               {note.version && (
-                <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">Versão</p>
-                  <p className="font-mono">v{note.version}</p>
-                </div>
+                <div><p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">Versão</p><p className="font-mono">v{note.version}</p></div>
               )}
+            </div>
+            <div>
+              <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">Descrição técnica</p>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap max-h-48 overflow-auto">{note.rawDescription || '—'}</p>
             </div>
           </div>
         </div>
 
-        {/* Right: AI-generated + editor */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 flex flex-col gap-4">
-
-          {/* Text section */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="font-semibold text-sm">Release Note (IA)</h2>
-              {isEditable && (
-                <button
-                  onClick={handleRegenerate}
-                  disabled={loading === 'regen'}
-                  className="text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white transition disabled:opacity-50"
-                >
-                  {loading === 'regen' ? 'Regenerando...' : '↺ Regenerar'}
-                </button>
-              )}
-            </div>
-
-            {isEditable ? (
-              <textarea
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                rows={5}
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 leading-relaxed"
-                placeholder="Texto da release note..."
-              />
-            ) : (
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm leading-relaxed">
-                {note.finalText ?? note.aiGenerated}
-              </div>
-            )}
-            <p className="text-xs text-gray-400 mt-1 text-right">{text.length} caracteres</p>
-          </div>
-
-          {/* Image section */}
-          <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold">Imagem</h3>
-              {isEditable && (
-                <button
-                  onClick={handleCaptureViaTBot}
-                  disabled={!!loading}
-                  title="Abre o TBot para capturar automaticamente a tela da funcionalidade na TPAY"
-                  className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-md transition disabled:opacity-50 flex items-center gap-1"
-                >
-                  {loading === 'tbot' ? '⏳ Capturando...' : '📸 Capturar via TBot'}
-                </button>
-              )}
-            </div>
-
-            {/* Suggested capture hint */}
-            {note.suggestedCapture && (
-              <div className="mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-800 dark:text-amber-300">
-                <span className="font-semibold">💡 Sugestão de captura:</span>{' '}
-                {note.suggestedCapture}
-              </div>
-            )}
-
-            {isEditable ? (
-              <input
-                type="url"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                onBlur={handleImageUrlBlur}
-                placeholder="Cole a URL da imagem ou use o botão TBot acima"
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100"
-              />
-            ) : null}
-
-            {/* Preview */}
-            {imageUrl && (
-              <div className="mt-3 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-                <img
-                  src={imageUrl}
-                  alt="Screenshot da funcionalidade"
-                  className="w-full object-cover max-h-64"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                />
-              </div>
+        {/* Imagem */}
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-sm flex items-center gap-1.5"><span>🖼️</span> Imagem</h3>
+            {isEditable && (
+              <button onClick={handleCaptureViaTBot} disabled={!!loading}
+                title="Captura automática da tela da funcionalidade via TBot"
+                className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-md transition disabled:opacity-50">
+                {loading === 'tbot' ? '⏳ Capturando...' : '📸 Capturar via TBot'}
+              </button>
             )}
           </div>
-
-          {error && (
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          {note.suggestedCapture && (
+            <div className="mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-800 dark:text-amber-300">
+              <span className="font-semibold">💡 Sugestão:</span> {note.suggestedCapture}
+            </div>
           )}
-
-          {/* Status badge */}
-          <div>
-            <span className={`inline-flex items-center text-xs px-2.5 py-1 rounded-full font-medium ${
-              note.status === 'PENDING_APPROVAL'
-                ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                : note.status === 'PUBLISHED'
-                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-            }`}>
-              {note.status === 'PENDING_APPROVAL' ? 'Pendente' :
-               note.status === 'PUBLISHED' ? 'Publicado' :
-               note.status === 'DRAFT' ? 'Rascunho' : 'Arquivado'}
-            </span>
-          </div>
-
-          {/* Actions */}
           {isEditable && (
-            <div className="flex gap-3 mt-auto">
-              <button
-                onClick={() =>
-                  handleAction(
-                    () => api.approve(note.id, text, imageUrl || undefined) as Promise<void>,
-                    'approve',
-                  )
-                }
-                disabled={!!loading || !text.trim()}
-                className="flex-1 bg-gray-900 dark:bg-white text-white dark:text-gray-900 py-2 px-4 rounded-lg font-medium text-sm hover:opacity-90 transition disabled:opacity-50"
-              >
-                {loading === 'approve' ? 'Publicando...' : 'Aprovar e Publicar'}
-              </button>
-              <button
-                onClick={() =>
-                  handleAction(() => api.reject(note.id) as Promise<void>, 'reject')
-                }
-                disabled={!!loading}
-                className="px-4 py-2 rounded-lg border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition disabled:opacity-50"
-              >
-                {loading === 'reject' ? 'Rejeitando...' : 'Rejeitar'}
-              </button>
+            <input type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} onBlur={handleImageUrlBlur}
+              placeholder="Cole a URL da imagem ou use o botão TBot"
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-[#DDC444]/50" />
+          )}
+          {imageUrl ? (
+            <div className="mt-3 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+              <img src={imageUrl} alt="Screenshot" className="w-full object-contain max-h-72" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
             </div>
+          ) : (
+            <div className="mt-3 h-32 rounded-lg border border-dashed border-gray-200 dark:border-gray-700 flex items-center justify-center text-xs text-gray-400">Sem imagem ainda</div>
           )}
         </div>
       </div>
