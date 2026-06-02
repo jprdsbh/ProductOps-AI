@@ -1,0 +1,19 @@
+{
+  "name": "techdirector",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "db:generate": "turbo run db:generate",
+    "db:push": "turbo run db:push",
+    "db:seed": "npm run db:seed --workspace=apps/api",
+    "security:scan": "node scripts/security-scan.mjs"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0"
+  }
+}

@@ -1,0 +1,43 @@
+# ─── Dependências ───────────────────────────────
+node_modules
+apps/tbot/venv
+**/__pycache__
+*.pyc
+
+# ─── Builds / cache ─────────────────────────────
+dist
+.next
+.turbo
+*.tsbuildinfo
+
+# ─── Segredos / ambiente (NUNCA commitar) ───────
+.env
+.env.local
+.env.*.local
+**/.env
+!**/.env.example
+
+# ─── Dados locais / runtime ─────────────────────
+*.db
+apps/tbot/tbot.db
+*.log
+logs
+**/logs
+uploads
+**/uploads
+apps/tbot/screenshots
+.pm2
+
+# ─── Config local do agente ─────────────────────
+.claude
+
+# ─── Backups / temporários ──────────────────────
+*.bak
+.secbak
+favicon-preview.png
+
+# ─── SO / editor ────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode
+.idea

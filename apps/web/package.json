@@ -1,0 +1,24 @@
+{
+  "name": "@techdirector/web",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "../../node_modules/.bin/next dev -p 3003",
+    "build": "../../node_modules/.bin/next build",
+    "start": "../../node_modules/.bin/next start -p 3003"
+  },
+  "dependencies": {
+    "@techdirector/shared": "*",
+    "next": "^14.2.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.0"
+  }
+}

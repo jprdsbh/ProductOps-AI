@@ -1,0 +1,666 @@
+{
+  "pages": {
+    "https://gateway.sandbox.tamborete.com.br/": {
+      "url": "https://gateway.sandbox.tamborete.com.br/",
+      "title": "Tamborete Gateway",
+      "buttons": [
+        {
+          "text": "",
+          "selector": "button.MuiButtonBase-root.MuiIconButton-root",
+          "tag": "button"
+        },
+        {
+          "text": "Hoje",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        },
+        {
+          "text": "Ontem",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        },
+        {
+          "text": "Há 7 dias",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        },
+        {
+          "text": "Há 15 dias",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        },
+        {
+          "text": "Há 30 dias",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        },
+        {
+          "text": "Depositar",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        }
+      ],
+      "links": [
+        {
+          "text": "",
+          "href": "https://gateway.sandbox.tamborete.com.br/",
+          "internal": true,
+          "selector": "a"
+        }
+      ],
+      "inputs": [
+        {
+          "type": "text",
+          "name": "",
+          "placeholder": "Em breve",
+          "label": "Buscar (em breve)",
+          "selector": "input[aria-label=\"Buscar (em breve)\"]"
+        }
+      ],
+      "headings": [],
+      "nav_items": []
+    },
+    "https://gateway.sandbox.tamborete.com.br/catalog": {
+      "url": "https://gateway.sandbox.tamborete.com.br/catalog",
+      "title": "Tamborete Gateway",
+      "buttons": [
+        {
+          "text": "Voltar",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        },
+        {
+          "text": "Página inicial",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        }
+      ],
+      "links": [],
+      "inputs": [],
+      "headings": [],
+      "nav_items": []
+    },
+    "https://gateway.sandbox.tamborete.com.br/orders": {
+      "url": "https://gateway.sandbox.tamborete.com.br/orders",
+      "title": "Tamborete Gateway",
+      "buttons": [
+        {
+          "text": "Voltar",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        },
+        {
+          "text": "Página inicial",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        }
+      ],
+      "links": [],
+      "inputs": [],
+      "headings": [],
+      "nav_items": []
+    },
+    "https://gateway.sandbox.tamborete.com.br/offers/new": {
+      "url": "https://gateway.sandbox.tamborete.com.br/offers/new",
+      "title": "Tamborete Gateway",
+      "buttons": [
+        {
+          "text": "Voltar",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        },
+        {
+          "text": "Página inicial",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        }
+      ],
+      "links": [],
+      "inputs": [],
+      "headings": [],
+      "nav_items": []
+    },
+    "https://gateway.sandbox.tamborete.com.br/checkout-templates": {
+      "url": "https://gateway.sandbox.tamborete.com.br/checkout-templates",
+      "title": "Tamborete Gateway",
+      "buttons": [
+        {
+          "text": "Voltar",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        },
+        {
+          "text": "Página inicial",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        }
+      ],
+      "links": [],
+      "inputs": [],
+      "headings": [],
+      "nav_items": []
+    },
+    "https://gateway.sandbox.tamborete.com.br/produtos?tipo=digital": {
+      "url": "https://gateway.sandbox.tamborete.com.br/produtos?tipo=digital",
+      "title": "Tamborete Gateway",
+      "buttons": [
+        {
+          "text": "Voltar",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        },
+        {
+          "text": "Página inicial",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        }
+      ],
+      "links": [],
+      "inputs": [],
+      "headings": [],
+      "nav_items": []
+    },
+    "https://gateway.sandbox.tamborete.com.br/admin/transactions": {
+      "url": "https://gateway.sandbox.tamborete.com.br/admin/transactions",
+      "title": "Tamborete Gateway",
+      "buttons": [
+        {
+          "text": "Voltar",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        },
+        {
+          "text": "Página inicial",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        }
+      ],
+      "links": [],
+      "inputs": [],
+      "headings": [],
+      "nav_items": []
+    },
+    "https://gateway.sandbox.tamborete.com.br/checkout": {
+      "url": "https://gateway.sandbox.tamborete.com.br/checkout",
+      "title": "Tamborete Gateway",
+      "buttons": [
+        {
+          "text": "Voltar",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        },
+        {
+          "text": "Página inicial",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        }
+      ],
+      "links": [],
+      "inputs": [],
+      "headings": [],
+      "nav_items": []
+    },
+    "https://gateway.sandbox.tamborete.com.br/api/transactions/logs": {
+      "url": "https://gateway.sandbox.tamborete.com.br/api/transactions/logs",
+      "title": "Tamborete Gateway",
+      "buttons": [
+        {
+          "text": "Voltar",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        },
+        {
+          "text": "Página inicial",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        }
+      ],
+      "links": [],
+      "inputs": [],
+      "headings": [],
+      "nav_items": []
+    },
+    "https://gateway.sandbox.tamborete.com.br/vendas": {
+      "url": "https://gateway.sandbox.tamborete.com.br/vendas",
+      "title": "Tamborete Gateway",
+      "buttons": [
+        {
+          "text": "Voltar",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        },
+        {
+          "text": "Página inicial",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        }
+      ],
+      "links": [],
+      "inputs": [],
+      "headings": [],
+      "nav_items": []
+    },
+    "https://gateway.sandbox.tamborete.com.br/products": {
+      "url": "https://gateway.sandbox.tamborete.com.br/products",
+      "title": "Tamborete Gateway",
+      "buttons": [
+        {
+          "text": "",
+          "selector": "button.MuiButtonBase-root.MuiIconButton-root",
+          "tag": "button"
+        },
+        {
+          "text": "Voltar",
+          "selector": "button[aria-label=\"Voltar\"]",
+          "tag": "button"
+        },
+        {
+          "text": "Criar produto",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        },
+        {
+          "text": "Ativo",
+          "selector": "button.MuiButtonBase-root.MuiTab-root",
+          "tag": "button"
+        },
+        {
+          "text": "Inativo",
+          "selector": "button.MuiButtonBase-root.MuiTab-root",
+          "tag": "button"
+        },
+        {
+          "text": "Digital\nID: 0e3024de-ec12-...\nProdutor\nrecurrenci\nVendas Ativas\nOfertas: 1",
+          "selector": "div[aria-label=\"Ver detalhes do produto recurrenci \"]",
+          "tag": "div"
+        },
+        {
+          "text": "Copiar ID",
+          "selector": "button[aria-label=\"Copiar ID\"]",
+          "tag": "button"
+        },
+        {
+          "text": "Físico\nID: eddb3b26-c76a-...\nProdutor\nproduto fisico\nVendas Ativas\nOfertas: 2",
+          "selector": "div[aria-label=\"Ver detalhes do produto produto fisico\"]",
+          "tag": "div"
+        },
+        {
+          "text": "Copiar ID",
+          "selector": "button[aria-label=\"Copiar ID\"]",
+          "tag": "button"
+        },
+        {
+          "text": "Digital\nID: 48213f7c-c141-...\nProdutor\nTeste 923\nVendas Ativas\nOfertas: 2",
+          "selector": "div[aria-label=\"Ver detalhes do produto Teste 923\"]",
+          "tag": "div"
+        },
+        {
+          "text": "Copiar ID",
+          "selector": "button[aria-label=\"Copiar ID\"]",
+          "tag": "button"
+        },
+        {
+          "text": "Físico\nID: c3916cbf-c9be-...\nProdutor\ndawdadwdaw dwaddw\nVendas Ativas\nOfertas: 1",
+          "selector": "div[aria-label=\"Ver detalhes do produto dawdadwdaw dwaddw\"]",
+          "tag": "div"
+        },
+        {
+          "text": "Copiar ID",
+          "selector": "button[aria-label=\"Copiar ID\"]",
+          "tag": "button"
+        }
+      ],
+      "links": [
+        {
+          "text": "",
+          "href": "https://gateway.sandbox.tamborete.com.br/",
+          "internal": true,
+          "selector": "a"
+        }
+      ],
+      "inputs": [
+        {
+          "type": "text",
+          "name": "",
+          "placeholder": "Em breve",
+          "label": "Buscar (em breve)",
+          "selector": "input[aria-label=\"Buscar (em breve)\"]"
+        },
+        {
+          "type": "text",
+          "name": "",
+          "placeholder": "Buscar produtos...",
+          "label": "",
+          "selector": "#_r_6_"
+        }
+      ],
+      "headings": [],
+      "nav_items": []
+    },
+    "https://gateway.sandbox.tamborete.com.br/products/0e3024de-ec12-4a2c-ae9b-cc57a22070b8": {
+      "url": "https://gateway.sandbox.tamborete.com.br/products/0e3024de-ec12-4a2c-ae9b-cc57a22070b8",
+      "title": "Super Banco de Plastico Ltd",
+      "buttons": [
+        {
+          "text": "",
+          "selector": "button.MuiButtonBase-root.MuiIconButton-root",
+          "tag": "button"
+        },
+        {
+          "text": "Voltar",
+          "selector": "button[aria-label=\"Voltar\"]",
+          "tag": "button"
+        },
+        {
+          "text": "Copiar ID",
+          "selector": "button[aria-label=\"Copiar ID\"]",
+          "tag": "button"
+        },
+        {
+          "text": "Copiar link",
+          "selector": "button[aria-label=\"Copiar link\"]",
+          "tag": "button"
+        },
+        {
+          "text": "Open",
+          "selector": "button[aria-label=\"Open\"]",
+          "tag": "button"
+        },
+        {
+          "text": "Menu de ações",
+          "selector": "button[aria-label=\"Menu de ações\"]",
+          "tag": "button"
+        },
+        {
+          "text": "Precificação & Ofertas",
+          "selector": "button.MuiButtonBase-root.MuiTab-root",
+          "tag": "button"
+        },
+        {
+          "text": "Informações",
+          "selector": "button.MuiButtonBase-root.MuiTab-root",
+          "tag": "button"
+        },
+        {
+          "text": "Cupons",
+          "selector": "button.MuiButtonBase-root.MuiTab-root",
+          "tag": "button"
+        },
+        {
+          "text": "Integrações",
+          "selector": "button.MuiButtonBase-root.MuiTab-root",
+          "tag": "button"
+        },
+        {
+          "text": "Afiliados\nEm Breve",
+          "selector": "button.MuiButtonBase-root.MuiTab-root",
+          "tag": "button"
+        },
+        {
+          "text": "Coproduções\nEm Breve",
+          "selector": "button.MuiButtonBase-root.MuiTab-root",
+          "tag": "button"
+        },
+        {
+          "text": "Painel\nEm Breve",
+          "selector": "button.MuiButtonBase-root.MuiTab-root",
+          "tag": "button"
+        },
+        {
+          "text": "Editar",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        },
+        {
+          "text": "Nova oferta",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        }
+      ],
+      "links": [
+        {
+          "text": "",
+          "href": "https://gateway.sandbox.tamborete.com.br/",
+          "internal": true,
+          "selector": "a"
+        }
+      ],
+      "inputs": [
+        {
+          "type": "text",
+          "name": "",
+          "placeholder": "Em breve",
+          "label": "Buscar (em breve)",
+          "selector": "input[aria-label=\"Buscar (em breve)\"]"
+        },
+        {
+          "type": "text",
+          "name": "",
+          "placeholder": "",
+          "label": "",
+          "selector": "#_r_v_"
+        }
+      ],
+      "headings": [],
+      "nav_items": []
+    },
+    "https://checkout.sandbox.tpay.com.br/cefca0ed-8fb1-4525-a6bb-36dee542661f": {
+      "url": "https://checkout.sandbox.tpay.com.br/cefca0ed-8fb1-4525-a6bb-36dee542661f",
+      "title": "Checkout",
+      "buttons": [
+        {
+          "text": "Brasil",
+          "selector": "button.flex.h-[44px]",
+          "tag": "button"
+        },
+        {
+          "text": "Cartão",
+          "selector": "button.inline-flex.items-center",
+          "tag": "button"
+        },
+        {
+          "text": "Pix\n-50%",
+          "selector": "button.inline-flex.items-center",
+          "tag": "button"
+        },
+        {
+          "text": "1x de R$ 100,00",
+          "selector": "button.flex.h-[44px]",
+          "tag": "button"
+        },
+        {
+          "text": "Adicionar produto\ncom desconto\naaaaasdaadsda\n+ R$ 300,00\n33% OFF\nR$ 200,00 à vista\nQuantidade de parcelas*\n12x de R$ 20,15 *",
+          "selector": "div.flex.w-full",
+          "tag": "div"
+        },
+        {
+          "text": "12x de R$ 20,15 *",
+          "selector": "button.flex.h-[44px]",
+          "tag": "button"
+        },
+        {
+          "text": "Finalizar Compra",
+          "selector": "button.inline-flex.items-center",
+          "tag": "button"
+        },
+        {
+          "text": "Cupom de desconto",
+          "selector": "#radix-_R_bd4luknnb_",
+          "tag": "button"
+        }
+      ],
+      "links": [
+        {
+          "text": "Acesse nossa Central de Ajuda.",
+          "href": "https://tpay.com.br/central-de-ajuda",
+          "internal": false,
+          "selector": "a.font-semibold.underline"
+        },
+        {
+          "text": "Termos de Uso",
+          "href": "https://tpay.com.br/termos-de-uso",
+          "internal": false,
+          "selector": "a.font-semibold.underline"
+        },
+        {
+          "text": "Política de Privacidade",
+          "href": "https://tpay.com.br/politica-de-privacidade",
+          "internal": false,
+          "selector": "a.font-semibold.underline"
+        }
+      ],
+      "inputs": [
+        {
+          "type": "text",
+          "name": "",
+          "placeholder": "",
+          "label": "",
+          "selector": "#fullname"
+        },
+        {
+          "type": "email",
+          "name": "",
+          "placeholder": "nome@email.com.br",
+          "label": "",
+          "selector": "#email"
+        },
+        {
+          "type": "tel",
+          "name": "",
+          "placeholder": "(00) 00000-0000",
+          "label": "",
+          "selector": "#telefone"
+        },
+        {
+          "type": "text",
+          "name": "",
+          "placeholder": "000.000.000-00",
+          "label": "",
+          "selector": "#cpf"
+        },
+        {
+          "type": "text",
+          "name": "",
+          "placeholder": "0000 0000 0000 0000",
+          "label": "",
+          "selector": "#cardNumber"
+        },
+        {
+          "type": "text",
+          "name": "",
+          "placeholder": "Nome como está no cartão",
+          "label": "",
+          "selector": "#cardName"
+        },
+        {
+          "type": "text",
+          "name": "",
+          "placeholder": "MM/AA",
+          "label": "",
+          "selector": "#cardExpiry"
+        },
+        {
+          "type": "text",
+          "name": "",
+          "placeholder": "000",
+          "label": "",
+          "selector": "#cardCvv"
+        },
+        {
+          "type": "checkbox",
+          "name": "",
+          "placeholder": "",
+          "label": "Selecionar aaaaasdaadsda",
+          "selector": "#_r_2_"
+        }
+      ],
+      "headings": [
+        {
+          "tag": "h2",
+          "text": "Você também pode gostar"
+        },
+        {
+          "tag": "h3",
+          "text": "Cupom de desconto"
+        }
+      ],
+      "nav_items": []
+    },
+    "https://gateway.sandbox.tamborete.com.br/sales": {
+      "url": "https://gateway.sandbox.tamborete.com.br/sales",
+      "title": "Super Banco de Plastico Ltd",
+      "buttons": [
+        {
+          "text": "",
+          "selector": "button.MuiButtonBase-root.MuiIconButton-root",
+          "tag": "button"
+        },
+        {
+          "text": "Voltar",
+          "selector": "button[aria-label=\"Voltar\"]",
+          "tag": "button"
+        },
+        {
+          "text": "",
+          "selector": "button.MuiButtonBase-root.MuiIconButton-root",
+          "tag": "button"
+        },
+        {
+          "text": "Aprovada",
+          "selector": "button.MuiButtonBase-root.MuiTab-root",
+          "tag": "button"
+        },
+        {
+          "text": "Concluída",
+          "selector": "button.MuiButtonBase-root.MuiTab-root",
+          "tag": "button"
+        },
+        {
+          "text": "Reembolsada",
+          "selector": "button.MuiButtonBase-root.MuiTab-root",
+          "tag": "button"
+        },
+        {
+          "text": "Chargeback",
+          "selector": "button.MuiButtonBase-root.MuiTab-root",
+          "tag": "button"
+        },
+        {
+          "text": "Gerar relatório",
+          "selector": "button.MuiButtonBase-root.MuiButton-root",
+          "tag": "button"
+        }
+      ],
+      "links": [
+        {
+          "text": "",
+          "href": "https://gateway.sandbox.tamborete.com.br/",
+          "internal": true,
+          "selector": "a"
+        }
+      ],
+      "inputs": [
+        {
+          "type": "text",
+          "name": "",
+          "placeholder": "Em breve",
+          "label": "Buscar (em breve)",
+          "selector": "input[aria-label=\"Buscar (em breve)\"]"
+        },
+        {
+          "type": "text",
+          "name": "",
+          "placeholder": "Busque...",
+          "label": "",
+          "selector": "#_r_f_"
+        }
+      ],
+      "headings": [],
+      "nav_items": []
+    }
+  },
+  "flows": [],
+  "version": 1,
+  "last_explored": "2026-06-02 10:29:24",
+  "total_pages": 14
+}
