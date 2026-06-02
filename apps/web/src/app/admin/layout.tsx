@@ -1,6 +1,15 @@
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  // Sem sessão (ex.: tela de login) → não renderiza o menu admin.
+  // As rotas em si já são protegidas pelo middleware; isso evita expor a
+  // navegação/estrutura antes do login.
+  const token = (await cookies()).get('access_token')?.value;
+  if (!token) {
+    return <div className="min-h-screen bg-gray-50 dark:bg-gray-950">{children}</div>;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
