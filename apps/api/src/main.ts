@@ -16,6 +16,10 @@ async function bootstrap() {
   // rawBody: true preserves the raw buffer needed for HMAC webhook verification
   const app = await NestFactory.create(AppModule, { rawBody: true });
 
+  // Atrás de proxy (Railway/Render/etc.): confia no X-Forwarded-* para o
+  // rate-limit identificar o IP real e o cookie Secure funcionar sob HTTPS.
+  app.getHttpAdapter().getInstance().set('trust proxy', 1);
+
   // ── Segurança: headers de proteção (HSTS, no-sniff, frame-deny, etc.) ──
   // CORP em 'cross-origin' pra o web (3001) conseguir carregar imagens de /uploads (3002).
   // CSP desligado aqui: a API serve JSON/imagens, não HTML — quem renderiza é o Next.
