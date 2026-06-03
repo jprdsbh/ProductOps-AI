@@ -125,8 +125,22 @@ export default function ReviewClient({ note }: { note: ReleaseNoteDto }) {
 
       {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
 
-      {/* ── Workspace: editor | pré-visualização ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* ── Workspace: descrição técnica | editor | pré-visualização ── */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        {/* Descrição técnica do ClickUp (pra comparar com o gerado) */}
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 flex flex-col">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-semibold text-sm flex items-center gap-1.5"><span>📌</span> Escopo técnico (ClickUp)</h2>
+            {note.clickupTaskUrl && (
+              <a href={note.clickupTaskUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">ver ↗</a>
+            )}
+          </div>
+          <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">{note.rawTitle}</p>
+          <div className="flex-1 min-h-[60vh] overflow-auto rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 p-3 text-xs text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap">
+            {note.rawDescription || '— sem descrição técnica —'}
+          </div>
+        </div>
+
         {/* Editor */}
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 flex flex-col">
           <div className="flex items-center justify-between mb-2">
@@ -159,10 +173,7 @@ export default function ReviewClient({ note }: { note: ReleaseNoteDto }) {
         {/* Tarefa original */}
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-sm flex items-center gap-1.5"><span>📌</span> Tarefa original (ClickUp)</h3>
-            {note.clickupTaskUrl && (
-              <a href={note.clickupTaskUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Ver no ClickUp ↗</a>
-            )}
+            <h3 className="font-semibold text-sm flex items-center gap-1.5"><span>🏷️</span> Identificação</h3>
           </div>
           <div className="space-y-3 text-sm">
             <div className="flex gap-4 items-end">
@@ -177,8 +188,8 @@ export default function ReviewClient({ note }: { note: ReleaseNoteDto }) {
               )}
             </div>
             <div>
-              <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">Descrição técnica</p>
-              <p className="text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap max-h-48 overflow-auto">{note.rawDescription || '—'}</p>
+              <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">ID ClickUp</p>
+              <p className="font-mono text-xs text-gray-400">{note.clickupTaskId}</p>
             </div>
           </div>
         </div>

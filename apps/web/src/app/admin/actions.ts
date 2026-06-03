@@ -35,6 +35,21 @@ export async function regenerateDrafts(): Promise<{
   return res.json();
 }
 
+export async function regenerateAll(): Promise<{
+  processed: number;
+  fromApi: number;
+  errors: number;
+  cacheCleared: number;
+}> {
+  const res = await fetch(`${API}/api/release-notes/regenerate-all`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error(`Regenerate-all failed (${res.status})`);
+  return res.json();
+}
+
 export async function getAiStats(): Promise<{
   totals: {
     apiCalls: number;

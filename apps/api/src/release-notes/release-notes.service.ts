@@ -102,10 +102,36 @@ export class ReleaseNotesService {
     return { data, total, page, limit };
   }
 
+  async findArchived(page = 1, limit = 50) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.prisma.releaseNote.findMany({
+        where: { status: 'ARCHIVED' },
+        orderBy: { updatedAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.releaseNote.count({ where: { status: 'ARCHIVED' } }),
+    ]);
+    return { data, total, page, limit };
+  }
+
   async findOne(id: string) {
     const note = await this.prisma.releaseNote.findUnique({ where: { id } });
     if (!note) throw new NotFoundException('Release note not found');
     return note;
+  }
+
+  // Tira da blacklist: volta uma reprovada para pendente de aprovação
+  async restore(id: string) {
+    const note = await this.findOne(id);
+    if (note.status !== 'ARCHIVED') {
+      throw new BadRequestException(`Só é possível restaurar notas reprovadas (status atual: ${note.status})`);
+    }
+    return this.prisma.releaseNote.update({
+      where: { id },
+      data: { status: 'PENDING_APPROVAL' },
+    });
   }
 
   async approve(id: string, finalText: string, imageUrl?: string) {
@@ -220,6 +246,10 @@ export class ReleaseNotesService {
 
   async regenerateDrafts() {
     return this.ai.regenerateDrafts();
+  }
+
+  async regenerateAll() {
+    return this.ai.regenerateAll();
   }
 
   async getAiStats() {

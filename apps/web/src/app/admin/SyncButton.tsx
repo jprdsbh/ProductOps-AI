@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { syncClickUp, regenerateDrafts, getAiStats } from './actions';
+import { syncClickUp, regenerateDrafts, regenerateAll, getAiStats } from './actions';
 
 type SyncState = 'idle' | 'loading' | 'done' | 'error';
 
@@ -13,8 +13,10 @@ interface AiStats {
 export function SyncButton() {
   const [syncState, setSyncState]   = useState<SyncState>('idle');
   const [regenState, setRegenState] = useState<SyncState>('idle');
+  const [allState, setAllState]     = useState<SyncState>('idle');
   const [syncResult, setSyncResult] = useState<{ created: number; skipped: number; errors: number } | null>(null);
   const [regenResult, setRegenResult] = useState<{ processed: number; fromCache: number; fromApi: number; errors: number } | null>(null);
+  const [allResult, setAllResult]   = useState<{ processed: number; fromApi: number; errors: number; cacheCleared: number } | null>(null);
   const [stats, setStats]           = useState<AiStats | null>(null);
   const [showStats, setShowStats]   = useState(false);
   const [loadingStats, setLoadingStats] = useState(false);
@@ -43,6 +45,23 @@ export function SyncButton() {
     } catch (e: any) {
       setError(e.message);
       setRegenState('error');
+    }
+  }
+
+  async function handleRegenAll() {
+    const ok = window.confirm(
+      '⚠️ Isto vai APAGAR o cache de IA e REGERAR todas as notas pendentes via API (custo de IA). Use só se mudou o prompt/regras. Continuar?'
+    );
+    if (!ok) return;
+    setAllState('loading');
+    setAllResult(null);
+    setError('');
+    try {
+      setAllResult(await regenerateAll());
+      setAllState('done');
+    } catch (e: any) {
+      setError(e.message);
+      setAllState('error');
     }
   }
 
@@ -85,6 +104,19 @@ export function SyncButton() {
           {regenState === 'loading' ? 'Gerando...' : 'Gerar rascunhos'}
         </button>
 
+        {/* Regerar tudo (limpa cache) */}
+        <button
+          onClick={handleRegenAll}
+          disabled={allState === 'loading'}
+          title="Apaga o cache de IA e regenera TODAS as notas pendentes (custo de IA)"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:border-red-400 transition disabled:opacity-40"
+        >
+          <svg className={`w-4 h-4 ${allState === 'loading' ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          {allState === 'loading' ? 'Regerando tudo...' : 'Regerar tudo'}
+        </button>
+
         {/* Stats de IA */}
         <button
           onClick={handleStats}
@@ -116,6 +148,12 @@ export function SyncButton() {
             {regenResult.fromCache > 0 && ` · 💾 ${regenResult.fromCache} do cache`}
             {regenResult.fromApi > 0 && ` · 🤖 ${regenResult.fromApi} via API`}
             {regenResult.errors > 0 && ` · ⚠️ ${regenResult.errors} erros`}
+          </span>
+        )}
+        {allState === 'done' && allResult && (
+          <span className="text-xs text-gray-500">
+            🔄 {allResult.processed} regeradas · 🧹 {allResult.cacheCleared} do cache limpo · 🤖 {allResult.fromApi} via API
+            {allResult.errors > 0 && ` · ⚠️ ${allResult.errors} erros`}
           </span>
         )}
         {error && <span className="text-xs text-red-500">{error}</span>}

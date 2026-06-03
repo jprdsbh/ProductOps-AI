@@ -317,6 +317,56 @@ export class AiService {
     return { processed: drafts.length, fromCache, fromApi, errors };
   }
 
+  // ─── Regerar TUDO (limpa o cache e força nova geração) ───────────────────────
+  // Apaga o AiCache e regenera todas as notas pendentes/rascunho via API (sem cache).
+  // Usar quando o prompt/regras mudaram e você quer conteúdo fresco em todas.
+
+  async regenerateAll(): Promise<{ processed: number; fromApi: number; errors: number; cacheCleared: number }> {
+    const cacheCleared = await this.prisma.aiCache.count();
+    await this.prisma.aiCache.deleteMany({});
+    this.logger.log(`Regerar TUDO: cache limpo (${cacheCleared} entradas).`);
+
+    const notes = await this.prisma.releaseNote.findMany({
+      where: { status: { in: ['PENDING_APPROVAL', 'DRAFT'] } },
+      select: { id: true, rawTitle: true, rawDescription: true, category: true, version: true },
+    });
+    this.logger.log(`Regerar TUDO: ${notes.length} notas em batches de ${this.BATCH_SIZE}`);
+
+    let fromApi = 0, errors = 0;
+    for (let i = 0; i < notes.length; i += this.BATCH_SIZE) {
+      const batch = notes.slice(i, i + this.BATCH_SIZE);
+      try {
+        const results = await this.callApiBatch(batch.map(d => ({
+          title: d.rawTitle, description: d.rawDescription,
+          category: d.category ?? undefined, version: d.version ?? undefined,
+        })));
+        for (let j = 0; j < batch.length; j++) {
+          const note = batch[j];
+          const result = results[j];
+          if (!result) { errors++; continue; }
+          await this.prisma.releaseNote.update({
+            where: { id: note.id },
+            data: { aiGenerated: result.text, suggestedCapture: result.suggestedCapture || null, suggestedRoute: result.suggestedRoute || null, status: 'PENDING_APPROVAL' },
+          });
+          const hash = this.buildInputHash({ title: note.rawTitle, description: note.rawDescription, category: note.category ?? undefined, version: note.version ?? undefined });
+          await this.prisma.aiCache.upsert({
+            where: { inputHash: hash },
+            update: { text: result.text, suggestedCapture: result.suggestedCapture, suggestedRoute: result.suggestedRoute, lastUsedAt: new Date() },
+            create: { inputHash: hash, text: result.text, suggestedCapture: result.suggestedCapture, suggestedRoute: result.suggestedRoute, model: this.model },
+          });
+          fromApi++;
+        }
+        await this.recordStat({ apiCalls: 1 });
+      } catch (err) {
+        this.logger.error(`Falha no batch ${i / this.BATCH_SIZE + 1}: ${err}`);
+        errors += batch.length;
+      }
+    }
+
+    this.logger.log(`Regerar TUDO done: ${fromApi} regeradas, ${errors} erros`);
+    return { processed: notes.length, fromApi, errors, cacheCleared };
+  }
+
   // ─── Estatísticas de uso ────────────────────────────────────────────────────
 
   async getUsageStats() {

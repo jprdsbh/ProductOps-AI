@@ -15,6 +15,7 @@ function TPayLogo({ className = '' }: { className?: string }) {
 const NAV = [
   { href: '/admin', label: 'Pendentes', icon: '📋' },
   { href: '/admin/published', label: 'Publicados', icon: '✅' },
+  { href: '/admin/rejected', label: 'Reprovadas', icon: '🚫' },
   { href: '/admin/subscribers', label: 'Assinantes', icon: '📧' },
   { href: '/admin/tbot', label: 'TBot', icon: '🤖' },
 ];

@@ -41,9 +41,24 @@ export class ReleaseNotesController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('archived')
+  getArchived(
+    @Query('page') page = '1',
+    @Query('limit') limit = '50',
+  ) {
+    return this.service.findArchived(+page, +limit);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   getOne(@Param('id') id: string) {
     return this.service.findOne(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/restore')
+  restore(@Param('id') id: string) {
+    return this.service.restore(id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -113,6 +128,12 @@ export class ReleaseNotesController {
   @Post('regenerate-drafts')
   regenerateDrafts() {
     return this.service.regenerateDrafts();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('regenerate-all')
+  regenerateAll() {
+    return this.service.regenerateAll();
   }
 
   @UseGuards(JwtAuthGuard)
