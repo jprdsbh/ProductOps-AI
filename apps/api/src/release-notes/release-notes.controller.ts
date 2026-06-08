@@ -49,6 +49,13 @@ export class ReleaseNotesController {
     return this.service.findArchived(+page, +limit);
   }
 
+  // IMPORTANTE: rotas estáticas (ai-stats) ANTES de ':id', senão ':id' captura "ai-stats".
+  @UseGuards(JwtAuthGuard)
+  @Get('ai-stats')
+  aiStats() {
+    return this.service.getAiStats();
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get(':id')
   getOne(@Param('id') id: string) {
@@ -134,11 +141,5 @@ export class ReleaseNotesController {
   @Post('regenerate-all')
   regenerateAll() {
     return this.service.regenerateAll();
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Get('ai-stats')
-  aiStats() {
-    return this.service.getAiStats();
   }
 }
