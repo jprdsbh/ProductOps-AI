@@ -1,5 +1,12 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
+
+// Esconde TODO o /admin dos buscadores (não indexar, não seguir links).
+export const metadata: Metadata = {
+  title: 'Admin — TamboretePay',
+  robots: { index: false, follow: false, nocache: true, googleBot: { index: false, follow: false } },
+};
 
 function TPayLogo({ className = '' }: { className?: string }) {
   return (
