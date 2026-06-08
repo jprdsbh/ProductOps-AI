@@ -69,6 +69,16 @@ function getCategoryColor(category: string | null): string {
   return 'bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700';
 }
 
+// Categoria real pelo emoji da nota gerada (ignora "Task"/"Frontend" do ClickUp)
+function categoryBadge(note: ReleaseNoteDto): { label: string; color: string } | null {
+  const t = note.finalText ?? note.aiGenerated ?? '';
+  if (t.includes('🚀')) return { label: 'Novidade', color: CATEGORY_COLORS.feature };
+  if (t.includes('🛠')) return { label: 'Melhoria', color: CATEGORY_COLORS.improvement };
+  if (t.includes('🐛')) return { label: 'Correção', color: CATEGORY_COLORS.bugfix };
+  if (t.includes('🔒')) return { label: 'Segurança', color: CATEGORY_COLORS.support };
+  return null;
+}
+
 function NoteCard({ note }: { note: ReleaseNoteDto }) {
   return (
     <Link
@@ -105,11 +115,11 @@ function NoteCard({ note }: { note: ReleaseNoteDto }) {
                 {note.clickupTaskId}
               </span>
             )}
-            {note.category && (
-              <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${getCategoryColor(note.category)}`}>
-                {note.category}
+            {(() => { const c = categoryBadge(note); return c ? (
+              <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${c.color}`}>
+                {c.label}
               </span>
-            )}
+            ) : null; })()}
             {note.status === 'DRAFT' && (
               <span className="text-xs font-medium px-2 py-0.5 rounded-full border bg-gray-50 text-gray-400 border-gray-200 dark:bg-gray-800 dark:border-gray-700">
                 rascunho

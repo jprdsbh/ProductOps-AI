@@ -7,7 +7,7 @@ import NoteCard from './NoteCard';
 import FloatingSubscribe from './FloatingSubscribe';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3002';
-const BASE = process.env.NEXT_PUBLIC_WEB_URL ?? 'https://changelog.tamboretemay.com.br';
+const BASE = process.env.NEXT_PUBLIC_WEB_URL ?? 'https://changelog.tpay.com.br';
 
 export const metadata: Metadata = {
   title: 'Changelog — TamboretePay',
@@ -59,13 +59,25 @@ const CATEGORY_META: Record<string, { label: string; color: string }> = {
   segurança:   { label: 'Segurança', color: 'bg-orange-50 text-orange-700 border-orange-200' },
 };
 
+// Categoria pelo EMOJI que a IA gera no início da nota (mais confiável que o
+// campo 'category' do ClickUp, que às vezes vem como "Task"/"Frontend").
+function categoryFromText(text: string | null, fallback: string | null) {
+  const t = text ?? '';
+  if (t.includes('🚀')) return CATEGORY_META.feature;
+  if (t.includes('🛠')) return CATEGORY_META.improvement;
+  if (t.includes('🐛')) return CATEGORY_META.bugfix;
+  if (t.includes('🔒')) return CATEGORY_META.security;
+  return getCategoryMeta(fallback);
+}
+
 function getCategoryMeta(category: string | null) {
   if (!category) return null;
   const key = category.toLowerCase();
   for (const [k, v] of Object.entries(CATEGORY_META)) {
     if (key.includes(k)) return v;
   }
-  return { label: category, color: 'bg-gray-50 text-gray-600 border-gray-200' };
+  // Não reconhecida (ex.: "Task"/"Frontend") → não mostra badge genérico
+  return null;
 }
 
 function formatDate(dateStr: string): string {
@@ -181,8 +193,8 @@ export default async function ChangelogPage({
 
             <div className="space-y-4">
               {notes.map((note, index) => {
-                const meta = getCategoryMeta(note.category);
                 const displayText = note.finalText ?? note.aiGenerated;
+                const meta = categoryFromText(displayText, note.category);
 
                 return (
                   <article key={note.id} id={note.id} className="relative flex gap-6">
