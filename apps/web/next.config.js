@@ -5,11 +5,12 @@ const nextConfig = {
     NEXT_PUBLIC_TBOT_URL: process.env.TBOT_URL || 'http://localhost:8000',
   },
   async rewrites() {
-    // `afterFiles`: o rewrite só roda depois que o Next checou as rotas locais.
-    // Assim /api/tbot/* (route handler local) tem prioridade; o resto vai pra
-    // API NestJS. Sem isso, o rewrite engolia tudo e dava 404 no proxy do TBot.
+    // `fallback`: o rewrite só roda DEPOIS que o Next checou TODAS as rotas
+    // locais (incluindo dynamic catch-all como /api/tbot/[...path]). Sem isso
+    // o rewrite engolia /api/tbot/* e mandava pra NestJS (404). Detalhe:
+    // `afterFiles` NÃO basta — ele roda antes de dynamic routes.
     return {
-      afterFiles: [
+      fallback: [
         {
           source: '/api/:path*',
           destination: `${process.env.API_URL || 'http://localhost:3002'}/api/:path*`,
