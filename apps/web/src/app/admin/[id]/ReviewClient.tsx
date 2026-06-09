@@ -89,6 +89,29 @@ export default function ReviewClient({ note }: { note: ReleaseNoteDto }) {
     finally { setLoading(null); }
   }
 
+  async function handlePasteImage(e: React.ClipboardEvent) {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of Array.from(items)) {
+      if (!item.type.startsWith('image/')) continue;
+      e.preventDefault();
+      const blob = item.getAsFile();
+      if (!blob) return;
+      setLoading('paste');
+      setError('');
+      try {
+        const { imageUrl: url } = await api.uploadImage(blob);
+        setImageUrl(url);
+        await api.updateImage(note.id, url);
+      } catch (err: any) {
+        setError(err.message ?? 'Erro ao colar imagem');
+      } finally {
+        setLoading(null);
+      }
+      return;
+    }
+  }
+
   async function handleImageUrlBlur() {
     if (imageUrl !== (note.imageUrl ?? '')) { try { await api.updateImage(note.id, imageUrl); } catch {} }
   }
@@ -197,7 +220,8 @@ export default function ReviewClient({ note }: { note: ReleaseNoteDto }) {
         </div>
 
         {/* Imagem */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5"
+          onPaste={isEditable ? handlePasteImage : undefined} tabIndex={isEditable ? 0 : undefined}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold text-sm flex items-center gap-1.5"><span>🖼️</span> Imagem</h3>
             {isEditable && (
@@ -223,7 +247,9 @@ export default function ReviewClient({ note }: { note: ReleaseNoteDto }) {
               <img src={imageUrl} alt="Screenshot" className="w-full object-contain max-h-72" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
             </div>
           ) : (
-            <div className="mt-3 h-32 rounded-lg border border-dashed border-gray-200 dark:border-gray-700 flex items-center justify-center text-xs text-gray-400">Sem imagem ainda</div>
+            <div className="mt-3 h-32 rounded-lg border border-dashed border-gray-200 dark:border-gray-700 flex items-center justify-center text-xs text-gray-400">
+              {loading === 'paste' ? 'Enviando imagem...' : 'Sem imagem — cole com Ctrl+V ou use o TBot'}
+            </div>
           )}
         </div>
       </div>

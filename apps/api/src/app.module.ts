@@ -9,6 +9,7 @@ import { AiModule } from './ai/ai.module';
 import { SubscribersModule } from './subscribers/subscribers.module';
 import { ClickupSyncModule } from './clickup-sync/clickup-sync.module';
 import { KnowledgeModule } from './knowledge/knowledge.module';
+import { FileUploadModule } from './file-upload/file-upload.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { KnowledgeModule } from './knowledge/knowledge.module';
     SubscribersModule,
     ClickupSyncModule,
     KnowledgeModule,
+    FileUploadModule,
   ],
 })
 export class AppModule {}

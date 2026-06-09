@@ -21,7 +21,9 @@
     "@nestjs/schedule": "^4.1.2",
     "@prisma/client": "^5.0.0",
     "@techdirector/shared": "*",
+    "@types/multer": "^2.1.0",
     "@types/nodemailer": "^8.0.0",
+    "@types/uuid": "^10.0.0",
     "bcrypt": "^5.1.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
@@ -29,12 +31,14 @@
     "dotenv": "^16.0.0",
     "express-rate-limit": "^8.5.2",
     "helmet": "^8.2.0",
-    "prisma": "^5.0.0",
+    "multer": "^2.0.2",
     "nodemailer": "^8.0.7",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "prisma": "^5.0.0",
     "reflect-metadata": "^0.1.13",
-    "rxjs": "^7.8.0"
+    "rxjs": "^7.8.0",
+    "uuid": "^11.0.3"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",

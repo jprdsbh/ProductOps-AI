@@ -78,4 +78,16 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ customId }),
     }),
+
+  uploadImage: async (file: Blob): Promise<{ imageUrl: string }> => {
+    const form = new FormData();
+    form.append('file', file, 'paste.png');
+    const url = typeof window !== 'undefined' ? '/api/uploads/image' : `${API}/api/uploads/image`;
+    const res = await fetch(url, { method: 'POST', credentials: 'include', body: form });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(err.message ?? 'Upload failed');
+    }
+    return res.json();
+  },
 };
