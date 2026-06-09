@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ReleaseNoteDto } from '@techdirector/shared';
@@ -89,7 +89,8 @@ export default function ReviewClient({ note }: { note: ReleaseNoteDto }) {
     finally { setLoading(null); }
   }
 
-  async function handlePasteImage(e: React.ClipboardEvent) {
+  const handlePasteImage = useCallback(async (e: ClipboardEvent) => {
+    if (!isEditable) return;
     const items = e.clipboardData?.items;
     if (!items) return;
     for (const item of Array.from(items)) {
@@ -110,7 +111,12 @@ export default function ReviewClient({ note }: { note: ReleaseNoteDto }) {
       }
       return;
     }
-  }
+  }, [isEditable, note.id]);
+
+  useEffect(() => {
+    document.addEventListener('paste', handlePasteImage);
+    return () => document.removeEventListener('paste', handlePasteImage);
+  }, [handlePasteImage]);
 
   async function handleImageUrlBlur() {
     if (imageUrl !== (note.imageUrl ?? '')) { try { await api.updateImage(note.id, imageUrl); } catch {} }
@@ -220,8 +226,7 @@ export default function ReviewClient({ note }: { note: ReleaseNoteDto }) {
         </div>
 
         {/* Imagem */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5"
-          onPaste={isEditable ? handlePasteImage : undefined} tabIndex={isEditable ? 0 : undefined}>
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold text-sm flex items-center gap-1.5"><span>🖼️</span> Imagem</h3>
             {isEditable && (
