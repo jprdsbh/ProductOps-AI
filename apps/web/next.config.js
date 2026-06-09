@@ -5,12 +5,17 @@ const nextConfig = {
     NEXT_PUBLIC_TBOT_URL: process.env.TBOT_URL || 'http://localhost:8000',
   },
   async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${process.env.API_URL || 'http://localhost:3002'}/api/:path*`,
-      },
-    ];
+    // `afterFiles`: o rewrite só roda depois que o Next checou as rotas locais.
+    // Assim /api/tbot/* (route handler local) tem prioridade; o resto vai pra
+    // API NestJS. Sem isso, o rewrite engolia tudo e dava 404 no proxy do TBot.
+    return {
+      afterFiles: [
+        {
+          source: '/api/:path*',
+          destination: `${process.env.API_URL || 'http://localhost:3002'}/api/:path*`,
+        },
+      ],
+    };
   },
   async headers() {
     const securityHeaders = [
