@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent / ".env", override=True)
 
-from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
+from fastapi import FastAPI, Request, HTTPException, BackgroundTasks, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -22,12 +22,42 @@ from database import SessionLocal, TestRun, get_test_plan, save_test_plan, recov
 
 app = FastAPI(title="TBot - QA Automation Agent")
 
+# Origens permitidas — local + admin em produção.
+# Adicione mais aqui se outro front precisar consumir o TBot.
+ALLOWED_ORIGINS = [
+    "http://localhost:3001",
+    "http://localhost:3003",
+    "http://localhost:3000",
+    "https://changelog.tpay.com.br",
+]
+# Extra: liberar origens custom via env (vírgula-separadas).
+_extra = (os.getenv("TBOT_EXTRA_ORIGINS") or "").strip()
+if _extra:
+    ALLOWED_ORIGINS.extend([o.strip() for o in _extra.split(",") if o.strip()])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3001", "http://localhost:3003", "http://localhost:3000"],
-    allow_methods=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+
+# ─── Auth por token compartilhado ───────────────────────────────────────────
+# O TBot fica exposto via Cloudflare Tunnel (https://tbot.tpay.com.br) para que
+# o admin em produção consiga chamar. Sem auth, qualquer um na internet poderia
+# disparar testes/screenshots. Token validado por header X-TBot-Token.
+# - Se TBOT_TOKEN não estiver setado no .env → modo "aberto" (só local, retrocompatível)
+# - Se setado → exigido em todos os endpoints de mutação. /health continua livre.
+TBOT_TOKEN = (os.getenv("TBOT_TOKEN") or "").strip()
+
+
+def verify_tbot_token(x_tbot_token: str | None = Header(None)):
+    """Dep do FastAPI: exige X-TBot-Token quando TBOT_TOKEN está configurado."""
+    if not TBOT_TOKEN:
+        return  # modo legado/desenvolvimento — sem auth
+    if not x_tbot_token or x_tbot_token != TBOT_TOKEN:
+        raise HTTPException(status_code=401, detail="Invalid or missing X-TBot-Token")
 
 # Serve screenshot files
 SCREENSHOTS_DIR = Path(__file__).parent / "screenshots"
@@ -403,7 +433,7 @@ async def clickup_webhook(request: Request, background_tasks: BackgroundTasks):
 
 # ─── Test runs ──────────────────────────────────────────────────────────────
 
-@app.get("/runs")
+@app.get("/runs", dependencies=[Depends(verify_tbot_token)])
 async def list_runs():
     """Lista todos os runs mais recentes, agrupados por task_id."""
     db = SessionLocal()
@@ -428,7 +458,7 @@ async def list_runs():
         db.close()
 
 
-@app.get("/runs/{run_id}")
+@app.get("/runs/{run_id}", dependencies=[Depends(verify_tbot_token)])
 async def get_run(run_id: str):
     db = SessionLocal()
     try:
@@ -440,7 +470,7 @@ async def get_run(run_id: str):
         db.close()
 
 
-@app.post("/runs/{run_id}/post")
+@app.post("/runs/{run_id}/post", dependencies=[Depends(verify_tbot_token)])
 async def post_run_to_clickup(run_id: str):
     """Posta o relatório desta execução como comentário no ClickUp."""
     db = SessionLocal()
@@ -462,7 +492,7 @@ async def post_run_to_clickup(run_id: str):
         db.close()
 
 
-@app.post("/runs/{run_id}/cancel")
+@app.post("/runs/{run_id}/cancel", dependencies=[Depends(verify_tbot_token)])
 async def cancel_run(run_id: str):
     """Interrompe um teste em andamento: sinaliza cancelamento e mata o browser."""
     db = SessionLocal()
@@ -491,7 +521,7 @@ async def cancel_run(run_id: str):
     return {"ok": True, "message": "Cancelamento solicitado."}
 
 
-@app.delete("/runs/{run_id}")
+@app.delete("/runs/{run_id}", dependencies=[Depends(verify_tbot_token)])
 async def delete_run(run_id: str):
     db = SessionLocal()
     try:
@@ -514,7 +544,7 @@ async def delete_run(run_id: str):
 
 # ─── ClickUp task list ──────────────────────────────────────────────────────
 
-@app.get("/tasks/pending")
+@app.get("/tasks/pending", dependencies=[Depends(verify_tbot_token)])
 async def pending_tasks():
     """Tasks com status 'test (in sandbox)' e escopo Frontend/Fullstack."""
     try:
@@ -526,7 +556,7 @@ async def pending_tasks():
 
 # ─── Plano de teste (preview antes de executar) ───────────────────────────────
 
-@app.get("/test/{task_id}/plan")
+@app.get("/test/{task_id}/plan", dependencies=[Depends(verify_tbot_token)])
 async def test_plan(task_id: str, fresh: bool = False):
     """
     Retorna o plano de teste para o QA revisar/editar antes de rodar.
@@ -587,7 +617,7 @@ class TestRequest(BaseModel):
     route_hint: str | None = None           # caminho conhecido (ex.: "/sales")
 
 
-@app.post("/test/{task_id}")
+@app.post("/test/{task_id}", dependencies=[Depends(verify_tbot_token)])
 async def manual_test(task_id: str, req: TestRequest | None = None):
     req = req or TestRequest()
     steps = [s for s in (req.steps or []) if s and s.strip()] or None
@@ -602,7 +632,7 @@ class ScreenshotRequest(BaseModel):
     suggested_capture: str = ""
 
 
-@app.post("/screenshot")
+@app.post("/screenshot", dependencies=[Depends(verify_tbot_token)])
 async def take_screenshot(req: ScreenshotRequest):
     result = capture_screenshot(req.description, req.suggested_capture)
     if "error" in result:

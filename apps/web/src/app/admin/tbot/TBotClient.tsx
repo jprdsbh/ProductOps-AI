@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-const TBOT_URL = process.env.NEXT_PUBLIC_TBOT_URL ?? 'http://localhost:8000';
+// Caminhos RELATIVOS — passam pelo proxy server-side (/api/tbot/*) que adiciona
+// o X-TBot-Token e valida a sessão de admin. O TBot pode estar em localhost ou
+// num tunnel (https://tbot.tpay.com.br); o cliente não precisa saber a URL.
+const TBOT_URL = '/api/tbot';
+const TBOT_IMG = '/api/tbot-img';
 
 type BotStatus = 'checking' | 'online' | 'offline';
 
@@ -182,7 +186,7 @@ function RunDetail({ runId, onClose }: { runId: string; onClose: () => void }) {
                 </span>
                 {run.live_shot ? (
                   <img
-                    src={`${TBOT_URL}${run.live_shot}`}
+                    src={`${TBOT_IMG}${run.live_shot}`}
                     alt="tela ao vivo"
                     className="w-full object-contain max-h-[420px]"
                   />
@@ -241,9 +245,9 @@ function RunDetail({ runId, onClose }: { runId: string; onClose: () => void }) {
               </p>
               <div className="grid grid-cols-2 gap-2">
                 {run.screenshots.map((url, i) => (
-                  <a key={i} href={`${TBOT_URL}${url}`} target="_blank" rel="noopener noreferrer">
+                  <a key={i} href={`${TBOT_IMG}${url}`} target="_blank" rel="noopener noreferrer">
                     <img
-                      src={`${TBOT_URL}${url}`}
+                      src={`${TBOT_IMG}${url}`}
                       alt={`step ${i + 1}`}
                       className="w-full rounded-lg border border-gray-200 dark:border-gray-700 object-cover max-h-40 hover:opacity-90 transition"
                     />
