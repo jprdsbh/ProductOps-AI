@@ -50,6 +50,37 @@ export async function regenerateAll(): Promise<{
   return res.json();
 }
 
+export interface AiBatchInfo {
+  id: string;
+  batchId: string;
+  status: string;
+  total: number;
+  succeeded: number;
+  errored: number;
+  createdAt: string;
+  processedAt: string | null;
+}
+
+export async function submitBatch(includeFilled = false): Promise<{ batchId: string; total: number; skippedCached: number }> {
+  const res = await fetch(`${API}/api/release-notes/batch/submit`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify({ includeFilled }),
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error(`Submit batch failed (${res.status})`);
+  return res.json();
+}
+
+export async function listBatches(): Promise<AiBatchInfo[]> {
+  const res = await fetch(`${API}/api/release-notes/batches`, {
+    headers: await authHeaders(),
+    cache: 'no-store',
+  });
+  if (!res.ok) return [];
+  return res.json();
+}
+
 export async function getAiStats(): Promise<{
   totals: {
     apiCalls: number;

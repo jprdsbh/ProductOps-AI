@@ -252,6 +252,11 @@ export class ReleaseNotesService {
     return this.ai.regenerateAll();
   }
 
+  // Batches (50% off, async — processados por cron a cada 5 min)
+  async submitBatch(opts: { includeFilled?: boolean }) { return this.ai.submitBatch(opts); }
+  async listBatches() { return this.ai.listBatches(); }
+  async processBatch(id: string) { return this.ai.processBatch(id); }
+
   async getAiStats() {
     return this.ai.getUsageStats();
   }

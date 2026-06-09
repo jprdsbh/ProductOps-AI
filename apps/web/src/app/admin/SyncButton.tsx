@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { syncClickUp, regenerateDrafts, regenerateAll, getAiStats } from './actions';
+import { syncClickUp, regenerateDrafts, regenerateAll, getAiStats, submitBatch, listBatches, type AiBatchInfo } from './actions';
 
 type SyncState = 'idle' | 'loading' | 'done' | 'error';
 
@@ -17,6 +17,10 @@ export function SyncButton() {
   const [syncResult, setSyncResult] = useState<{ created: number; skipped: number; errors: number } | null>(null);
   const [regenResult, setRegenResult] = useState<{ processed: number; fromCache: number; fromApi: number; errors: number } | null>(null);
   const [allResult, setAllResult]   = useState<{ processed: number; fromApi: number; errors: number; cacheCleared: number } | null>(null);
+  const [batchState, setBatchState] = useState<SyncState>('idle');
+  const [batchResult, setBatchResult] = useState<{ batchId: string; total: number; skippedCached: number } | null>(null);
+  const [batches, setBatches] = useState<AiBatchInfo[]>([]);
+  const [showBatches, setShowBatches] = useState(false);
   const [stats, setStats]           = useState<AiStats | null>(null);
   const [showStats, setShowStats]   = useState(false);
   const [loadingStats, setLoadingStats] = useState(false);
@@ -65,6 +69,34 @@ export function SyncButton() {
     }
   }
 
+  async function handleBatch() {
+    const ok = window.confirm(
+      '🟢 Modo econômico (Batch -50%): envia as notas pendentes para a Anthropic processar em background.\n\n' +
+      '• 50% mais barato\n' +
+      '• Resultado em alguns minutos a 24h (cron verifica a cada 5min)\n' +
+      '• Não bloqueia o admin\n\nContinuar?'
+    );
+    if (!ok) return;
+    setBatchState('loading');
+    setBatchResult(null);
+    setError('');
+    try {
+      setBatchResult(await submitBatch(false));
+      setBatchState('done');
+      setBatches(await listBatches());
+      setShowBatches(true);
+    } catch (e: any) {
+      setError(e.message);
+      setBatchState('error');
+    }
+  }
+
+  async function handleShowBatches() {
+    if (showBatches) { setShowBatches(false); return; }
+    setBatches(await listBatches());
+    setShowBatches(true);
+  }
+
   async function handleStats() {
     if (showStats) { setShowStats(false); return; }
     setLoadingStats(true);
@@ -102,6 +134,26 @@ export function SyncButton() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
           </svg>
           {regenState === 'loading' ? 'Gerando...' : 'Gerar rascunhos'}
+        </button>
+
+        {/* Modo econômico (Batch -50%) */}
+        <button
+          onClick={handleBatch}
+          disabled={batchState === 'loading'}
+          title="Envia as notas pra Anthropic processar em background (50% mais barato, leva alguns minutos)"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 hover:border-green-400 transition disabled:opacity-40"
+        >
+          <span className="text-xs">🟢</span>
+          {batchState === 'loading' ? 'Enviando...' : 'Modo econômico (-50%)'}
+        </button>
+
+        {/* Ver batches em andamento */}
+        <button
+          onClick={handleShowBatches}
+          title="Ver batches da Anthropic em andamento"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-gray-400 transition"
+        >
+          📦 Batches
         </button>
 
         {/* Regerar tudo (limpa cache) */}
@@ -156,8 +208,51 @@ export function SyncButton() {
             {allResult.errors > 0 && ` · ⚠️ ${allResult.errors} erros`}
           </span>
         )}
+        {batchState === 'done' && batchResult && (
+          <span className="text-xs text-green-700">
+            {batchResult.total > 0
+              ? `🟢 Batch enviado (${batchResult.total} notas, -50% custo). Resultados em alguns minutos.`
+              : `💾 Nada a enviar — todas em cache.`}
+            {batchResult.skippedCached > 0 && ` · ${batchResult.skippedCached} do cache aplicadas`}
+          </span>
+        )}
         {error && <span className="text-xs text-red-500">{error}</span>}
       </div>
+
+      {/* Painel de batches */}
+      {showBatches && (
+        <div className="w-96 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-lg text-xs">
+          <div className="flex items-center justify-between mb-3">
+            <p className="font-semibold text-sm">Batches da Anthropic</p>
+            <button onClick={() => setShowBatches(false)} className="text-gray-400 hover:text-gray-600">×</button>
+          </div>
+          {batches.length === 0 ? (
+            <p className="text-gray-400 py-3 text-center">Nenhum batch ainda. Use o "Modo econômico (-50%)" pra enviar.</p>
+          ) : (
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {batches.map((b) => {
+                const isPending = !b.processedAt;
+                return (
+                  <div key={b.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2.5">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${isPending ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
+                        {b.status}
+                      </span>
+                      <span className="text-[10px] text-gray-400">{new Date(b.createdAt).toLocaleString('pt-BR')}</span>
+                    </div>
+                    <p className="text-[11px] text-gray-500">
+                      {b.total} notas · {b.succeeded} ok
+                      {b.errored > 0 && ` · ${b.errored} erros`}
+                      {isPending && ' · ⏳ cron verifica a cada 5min'}
+                    </p>
+                    <p className="text-[10px] font-mono text-gray-400 truncate" title={b.batchId}>{b.batchId}</p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Painel de estatísticas */}
       {showStats && stats && (

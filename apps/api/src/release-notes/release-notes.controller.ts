@@ -142,4 +142,23 @@ export class ReleaseNotesController {
   regenerateAll() {
     return this.service.regenerateAll();
   }
+
+  // ─── Batch API (50% off, async) ─────────────────────────────────────────────
+  @UseGuards(JwtAuthGuard)
+  @Post('batch/submit')
+  submitBatch(@Body() body: { includeFilled?: boolean }) {
+    return this.service.submitBatch({ includeFilled: !!body?.includeFilled });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('batches')
+  listBatches() {
+    return this.service.listBatches();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('batches/:id/process')
+  processBatch(@Param('id') id: string) {
+    return this.service.processBatch(id);
+  }
 }

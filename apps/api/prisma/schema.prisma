@@ -101,6 +101,25 @@ model KnowledgeEntry {
   @@index([category])
 }
 
+// Batch de geração via Anthropic Message Batches API (50% mais barato, async).
+// Cada batch agrupa várias notas; ficamos com o batchId pra consultar quando
+// a Anthropic terminar (até 24h, normalmente minutos) e aplicar os resultados.
+model AiBatch {
+  id           String   @id @default(cuid())
+  batchId      String   @unique // anthropic batch_id (msgbatch_...)
+  status       String   // submitted | in_progress | ended | canceled | failed
+  noteIds      Json     // array de ReleaseNote.id incluídos no batch (e seu custom_id no request)
+  total        Int      // quantidade de requests no batch
+  succeeded    Int      @default(0)
+  errored      Int      @default(0)
+  model        String
+  createdAt    DateTime @default(now())
+  endedAt      DateTime?
+  processedAt  DateTime?
+
+  @@index([status])
+}
+
 // Estatísticas de uso da API de IA
 model AiUsageStat {
   id         String   @id @default(cuid())
