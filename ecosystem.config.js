@@ -36,5 +36,20 @@ module.exports = {
       error_file: './logs/tbot.error.log',
       log_date_format: 'HH:mm:ss',
     },
+    {
+      // Cloudflare Quick Tunnel pro TBot + atualiza TBOT_URL no Railway sozinho.
+      // Sobe o TBot local pra que o admin em produção consiga alcançá-lo.
+      name: 'techdirector-tunnel',
+      script: 'tools/tunnel-manager.mjs',
+      cwd: 'C:\\Users\\joaor\\Documents\\release-notes-ai',
+      interpreter: 'node',
+      watch: false,
+      autorestart: true,
+      max_restarts: 20,
+      restart_delay: 5000,
+      out_file: './logs/tunnel.log',
+      error_file: './logs/tunnel.error.log',
+      log_date_format: 'HH:mm:ss',
+    },
   ],
 };

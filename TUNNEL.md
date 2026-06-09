@@ -6,8 +6,40 @@ O **admin** roda em produção (Railway, `changelog.tpay.com.br`).
 O **TBot** roda na sua máquina local (Selenium + Chrome).
 
 Pra um chamar o outro com HTTPS e sem CORS quebrado, expomos o TBot via
-**Cloudflare Tunnel** num subdomínio (`tbot.tpay.com.br`). É grátis, dá HTTPS
-automático, URL fixa, sem abrir porta no roteador.
+**Cloudflare Tunnel**. É grátis, dá HTTPS automático, sem abrir porta no roteador.
+
+---
+
+## ✅ Setup atual (automatizado — Quick Tunnel)
+
+**Já está configurado e rodando sob PM2** (`techdirector-tunnel`). Não precisa fazer nada:
+
+1. `tools/cloudflared.exe` — binário oficial (baixado localmente, fora do git)
+2. `tools/tunnel-manager.mjs` — sobe o Quick Tunnel, captura a URL `*.trycloudflare.com`,
+   e **atualiza o `TBOT_URL` no Railway automaticamente** (dispara redeploy do web)
+3. PM2 mantém vivo e religa junto com a máquina (`pm2 save` já feito)
+
+Se cair / a máquina reiniciar: o PM2 sobe de novo, pega uma URL nova e reatualiza
+o Railway sozinho. **Self-healing.**
+
+### Comandos úteis
+```powershell
+pm2 logs techdirector-tunnel        # ver a URL atual / status
+pm2 restart techdirector-tunnel     # forçar nova URL
+```
+
+### Limitação honesta
+Quick Tunnel (trycloudflare) é grátis e sem login — perfeito pra ferramenta
+interna de QA. A URL **muda** a cada restart do túnel (por isso o auto-update do
+Railway). Cada troca de URL gera um redeploy do web (~2 min). Pra uma URL **fixa**
+(`tbot.tpay.com.br`), veja a seção "Named Tunnel" abaixo — mas exige login na
+conta Cloudflare da TPay.
+
+---
+
+## (Opcional) Named Tunnel com URL fixa `tbot.tpay.com.br`
+
+Use só se quiser URL fixa e tiver acesso à conta Cloudflare que controla `tpay.com.br`.
 
 ```
 [ Browser do João ]

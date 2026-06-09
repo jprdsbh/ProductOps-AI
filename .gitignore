@@ -41,3 +41,7 @@ favicon-preview.png
 Thumbs.db
 .vscode
 .idea
+
+# Binário do cloudflared (baixado localmente, não versionar)
+tools/cloudflared.exe
+tools/*.exe
