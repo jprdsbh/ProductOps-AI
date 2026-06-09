@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { createHash } from 'crypto';
 import Anthropic from '@anthropic-ai/sdk';
 import { PrismaService } from '../prisma/prisma.service';
@@ -465,6 +466,232 @@ ${entriesText}
       // Fallback: chama individualmente para não perder o batch inteiro
       return Promise.all(inputs.map((inp) => this.callApi(inp)));
     }
+  }
+
+  // ─── Anthropic Message Batches API (50% off, async) ─────────────────────────
+  // Submete várias notas como UM batch. A Anthropic processa em background
+  // (até 24h; normalmente minutos) e cobra metade. Ideal para regenerar todas
+  // de uma vez quando o prompt/regras mudam — não bloqueia a API NestJS.
+
+  /** Monta o prompt user de UMA nota (mesmo formato do callApi sync). */
+  private buildUserMessage(input: GenerateReleaseNoteInput): string {
+    return `${FEW_SHOT_EXAMPLES}
+
+Agora processe a seguinte tarefa:
+
+[ENTRADA]
+Título: ${input.title}
+Descrição: ${input.description}
+Categoria: ${input.category ?? 'geral'}
+${input.version ? `Versão: ${input.version}` : ''}
+[SAÍDA]`.trim();
+  }
+
+  /**
+   * Submete um batch para a Anthropic e cria o registro local.
+   * - Filtra notas que já têm aiGenerated (não regenera nada que já tem conteúdo)
+   *   a menos que opts.includeFilled = true (re-geração completa, com limpa de cache).
+   * - Retorna { batchId, total } imediatamente; processamento é assíncrono.
+   */
+  async submitBatch(opts: { includeFilled?: boolean } = {}): Promise<{ batchId: string; total: number; skippedCached: number }> {
+    const where: any = opts.includeFilled
+      ? { status: { in: ['PENDING_APPROVAL', 'DRAFT'] as any[] } }
+      : { OR: [{ status: 'DRAFT', aiGenerated: '' }, { status: 'PENDING_APPROVAL', aiGenerated: '' }] };
+
+    const notes = await this.prisma.releaseNote.findMany({
+      where,
+      select: { id: true, rawTitle: true, rawDescription: true, category: true, version: true },
+    });
+
+    if (opts.includeFilled) {
+      // re-geração completa: limpa o cache pra forçar conteúdo novo
+      await this.prisma.aiCache.deleteMany({});
+    }
+
+    // Aproveita cache para o que já estiver lá (não vai pro batch — economiza ainda mais)
+    const needsApi: typeof notes = [];
+    let skippedCached = 0;
+    for (const n of notes) {
+      const hash = this.buildInputHash({
+        title: n.rawTitle, description: n.rawDescription,
+        category: n.category ?? undefined, version: n.version ?? undefined,
+      });
+      const cached = opts.includeFilled ? null : await this.prisma.aiCache.findUnique({ where: { inputHash: hash } });
+      if (cached) {
+        await this.prisma.releaseNote.update({
+          where: { id: n.id },
+          data: {
+            aiGenerated: cached.text,
+            suggestedCapture: cached.suggestedCapture || null,
+            suggestedRoute: cached.suggestedRoute || null,
+            status: 'PENDING_APPROVAL',
+          },
+        });
+        skippedCached++;
+      } else {
+        needsApi.push(n);
+      }
+    }
+
+    if (needsApi.length === 0) {
+      this.logger.log(`submitBatch: nada a enviar (todas em cache: ${skippedCached}).`);
+      return { batchId: '', total: 0, skippedCached };
+    }
+
+    // Monta requests no formato do Batches API
+    // Importante: cada request tem um custom_id (= note.id) pra mapear resposta → nota.
+    const requests = needsApi.map((n) => ({
+      custom_id: n.id,
+      params: {
+        model: this.model,
+        max_tokens: 1024,
+        system: [
+          { type: 'text' as const, text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' as const } } as any,
+        ],
+        messages: [{ role: 'user' as const, content: this.buildUserMessage({
+          title: n.rawTitle, description: n.rawDescription,
+          category: n.category ?? undefined, version: n.version ?? undefined,
+        }) }],
+      },
+    }));
+
+    this.logger.log(`Submetendo batch Anthropic: ${requests.length} requests (${skippedCached} já em cache).`);
+    const batch: any = await (this.client.messages as any).batches.create({ requests });
+
+    await this.prisma.aiBatch.create({
+      data: {
+        batchId: batch.id,
+        status: batch.processing_status ?? 'submitted',
+        noteIds: needsApi.map((n) => n.id),
+        total: needsApi.length,
+        model: this.model,
+      },
+    });
+
+    return { batchId: batch.id, total: needsApi.length, skippedCached };
+  }
+
+  /** Lista batches locais com status atualizado da Anthropic. */
+  async listBatches() {
+    return this.prisma.aiBatch.findMany({ orderBy: { createdAt: 'desc' }, take: 20 });
+  }
+
+  /**
+   * Verifica um batch pendente: se a Anthropic terminou, baixa os resultados
+   * e aplica em cada nota (gravando no cache também). Idempotente.
+   */
+  async processBatch(localId: string): Promise<{ status: string; succeeded: number; errored: number }> {
+    const local = await this.prisma.aiBatch.findUnique({ where: { id: localId } });
+    if (!local) throw new Error('Batch não encontrado');
+    if (local.processedAt) {
+      return { status: local.status, succeeded: local.succeeded, errored: local.errored };
+    }
+
+    const remote: any = await (this.client.messages as any).batches.retrieve(local.batchId);
+    const remoteStatus: string = remote.processing_status ?? 'unknown';
+
+    // Ainda processando → só atualiza o status local
+    if (remoteStatus !== 'ended') {
+      await this.prisma.aiBatch.update({ where: { id: localId }, data: { status: remoteStatus } });
+      this.logger.log(`Batch ${local.batchId}: ${remoteStatus} (aguardando).`);
+      return { status: remoteStatus, succeeded: 0, errored: 0 };
+    }
+
+    // Acabou — baixa resultados (NDJSON) e aplica
+    let succeeded = 0, errored = 0;
+    const noteIds = local.noteIds as string[];
+
+    const results: AsyncIterable<any> = await (this.client.messages as any).batches.results(local.batchId);
+    for await (const item of results) {
+      const noteId: string | undefined = item.custom_id;
+      if (!noteId || !noteIds.includes(noteId)) continue;
+
+      const r = item.result;
+      if (r?.type !== 'succeeded' || !r.message) { errored++; continue; }
+
+      // Extrai texto e parseia JSON
+      const raw = (r.message.content ?? [])
+        .filter((b: any) => b.type === 'text')
+        .map((b: any) => b.text)
+        .join('')
+        .trim();
+      const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+      let parsed: GenerateReleaseNoteOutput;
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch {
+        parsed = { text: cleaned, suggestedCapture: '', suggestedRoute: '' };
+      }
+
+      // Reconcilia rota com a KB (mesma lógica do fluxo sync)
+      const note = await this.prisma.releaseNote.findUnique({ where: { id: noteId } });
+      if (!note) { errored++; continue; }
+      const final = await this.reconcileRouteWithKB(
+        { title: note.rawTitle, description: note.rawDescription, category: note.category ?? undefined, version: note.version ?? undefined },
+        parsed,
+      );
+
+      await this.prisma.releaseNote.update({
+        where: { id: noteId },
+        data: {
+          aiGenerated: final.text,
+          suggestedCapture: final.suggestedCapture || null,
+          suggestedRoute: final.suggestedRoute || null,
+          status: 'PENDING_APPROVAL',
+        },
+      });
+
+      // Cacheia para futuras gerações
+      const hash = this.buildInputHash({
+        title: note.rawTitle, description: note.rawDescription,
+        category: note.category ?? undefined, version: note.version ?? undefined,
+      });
+      await this.prisma.aiCache.upsert({
+        where: { inputHash: hash },
+        update: { text: final.text, suggestedCapture: final.suggestedCapture, suggestedRoute: final.suggestedRoute, lastUsedAt: new Date() },
+        create: { inputHash: hash, text: final.text, suggestedCapture: final.suggestedCapture, suggestedRoute: final.suggestedRoute, model: this.model },
+      });
+      succeeded++;
+    }
+
+    await this.prisma.aiBatch.update({
+      where: { id: localId },
+      data: {
+        status: 'ended',
+        succeeded,
+        errored,
+        endedAt: remote.ended_at ? new Date(remote.ended_at) : new Date(),
+        processedAt: new Date(),
+      },
+    });
+
+    // Registra como 1 chamada de API (o batch contou como 1, com 50% de desconto)
+    await this.recordStat({ apiCalls: 1 });
+
+    this.logger.log(`Batch ${local.batchId} processado: ${succeeded} ok, ${errored} erros.`);
+    return { status: 'ended', succeeded, errored };
+  }
+
+  /** Processa todos os batches pendentes (chamado pelo cron). */
+  async processPendingBatches() {
+    const pending = await this.prisma.aiBatch.findMany({
+      where: { processedAt: null },
+      select: { id: true },
+    });
+    for (const b of pending) {
+      try { await this.processBatch(b.id); } catch (err) {
+        this.logger.error(`processBatch ${b.id}: ${err}`);
+      }
+    }
+  }
+
+  /** Cron a cada 5 minutos verifica batches em andamento e aplica os prontos. */
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  async cronProcessBatches() {
+    const pending = await this.prisma.aiBatch.count({ where: { processedAt: null } });
+    if (pending === 0) return;
+    this.logger.log(`Cron: ${pending} batch(es) pendentes — verificando...`);
+    await this.processPendingBatches();
   }
 
   // ─── Chamada real à API com prompt caching ──────────────────────────────────
