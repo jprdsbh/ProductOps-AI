@@ -49,11 +49,18 @@ export class ReleaseNotesController {
     return this.service.findArchived(+page, +limit);
   }
 
-  // IMPORTANTE: rotas estáticas (ai-stats) ANTES de ':id', senão ':id' captura "ai-stats".
+  // IMPORTANTE: rotas estáticas (sem :id) precisam vir ANTES de ':id'.
+  // Senão ':id' captura tudo (ex.: "ai-stats", "batches") e dá 404.
   @UseGuards(JwtAuthGuard)
   @Get('ai-stats')
   aiStats() {
     return this.service.getAiStats();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('batches')
+  listBatches() {
+    return this.service.listBatches();
   }
 
   @UseGuards(JwtAuthGuard)
@@ -148,12 +155,6 @@ export class ReleaseNotesController {
   @Post('batch/submit')
   submitBatch(@Body() body: { includeFilled?: boolean }) {
     return this.service.submitBatch({ includeFilled: !!body?.includeFilled });
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Get('batches')
-  listBatches() {
-    return this.service.listBatches();
   }
 
   @UseGuards(JwtAuthGuard)
