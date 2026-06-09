@@ -6,7 +6,9 @@ import Link from 'next/link';
 import { ReleaseNoteDto } from '@techdirector/shared';
 import { api } from '@/lib/api';
 
-const TBOT_URL = process.env.NEXT_PUBLIC_TBOT_URL ?? 'http://localhost:8000';
+// Caminho relativo — passa pelo proxy server-side (/api/tbot/*) que injeta o
+// X-TBot-Token e valida a sessão. Resolve TBot local ↔ admin em prod.
+const TBOT_URL = '/api/tbot';
 
 // Renderiza o markdown leve da nota (negrito, bullets, ---, título) de forma segura.
 function renderNote(md: string) {
