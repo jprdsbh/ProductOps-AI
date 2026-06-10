@@ -49,13 +49,18 @@ function parseInline(str: string): Inline[] {
 }
 
 function InlineContent({ str }: { str: string }) {
+  const cleaned = cleanDashes(str);
   return (
     <>
-      {parseInline(cleanDashes(str)).map((part, i) =>
-        part.type === 'bold'
-          ? <strong key={i} className="font-semibold text-gray-900">{part.text}</strong>
-          : <span key={i}>{part.text}</span>
-      )}
+      {cleaned.split(/(!\[[^\]]*\]\([^)]+\))/g).map((segment, i) => {
+        const imgMatch = segment.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+        if (imgMatch) return <img key={i} src={imgMatch[2]} alt={imgMatch[1]} className="rounded-lg max-w-full my-3 border border-gray-100" />;
+        return parseInline(segment).map((part, j) =>
+          part.type === 'bold'
+            ? <strong key={`${i}-${j}`} className="font-semibold text-gray-900">{part.text}</strong>
+            : <span key={`${i}-${j}`}>{part.text}</span>
+        );
+      })}
     </>
   );
 }

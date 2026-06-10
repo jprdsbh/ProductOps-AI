@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ReleaseNoteDto } from '@techdirector/shared';
@@ -20,11 +20,12 @@ function renderNote(md: string) {
     if (!t) return <div key={i} className="h-2" />;
 
     const renderInline = (s: string) =>
-      s.split(/(\*\*[^*]+\*\*)/g).map((p, j) =>
-        p.startsWith('**') && p.endsWith('**')
-          ? <strong key={j} className="font-semibold text-gray-900 dark:text-gray-100">{p.slice(2, -2)}</strong>
-          : <span key={j}>{p}</span>,
-      );
+      s.split(/(!\[[^\]]*\]\([^)]+\)|\*\*[^*]+\*\*)/g).map((p, j) => {
+        const imgMatch = p.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+        if (imgMatch) return <img key={j} src={imgMatch[2]} alt={imgMatch[1]} className="rounded-lg max-w-full my-2 border border-gray-200 dark:border-gray-700" />;
+        if (p.startsWith('**') && p.endsWith('**')) return <strong key={j} className="font-semibold text-gray-900 dark:text-gray-100">{p.slice(2, -2)}</strong>;
+        return <span key={j}>{p}</span>;
+      });
 
     if (t.startsWith('- ') || t.startsWith('• ')) {
       return (
@@ -57,6 +58,7 @@ export default function ReviewClient({ note }: { note: ReleaseNoteDto }) {
   const [customId, setCustomId] = useState(note.customId ?? '');
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isEditable = note.status === 'PENDING_APPROVAL' || note.status === 'DRAFT';
   const status = STATUS_META[note.status] ?? STATUS_META.DRAFT;
@@ -102,8 +104,16 @@ export default function ReviewClient({ note }: { note: ReleaseNoteDto }) {
       setError('');
       try {
         const { imageUrl: url } = await api.uploadImage(blob);
-        setImageUrl(url);
-        await api.updateImage(note.id, url);
+        const md = `\n![image](${url})\n`;
+        const ta = textareaRef.current;
+        if (ta) {
+          const pos = ta.selectionStart ?? text.length;
+          const updated = text.slice(0, pos) + md + text.slice(pos);
+          setText(updated);
+          requestAnimationFrame(() => { ta.selectionStart = ta.selectionEnd = pos + md.length; ta.focus(); });
+        } else {
+          setText((prev) => prev + md);
+        }
       } catch (err: any) {
         setError(err.message ?? 'Erro ao colar imagem');
       } finally {
@@ -111,7 +121,7 @@ export default function ReviewClient({ note }: { note: ReleaseNoteDto }) {
       }
       return;
     }
-  }, [isEditable, note.id]);
+  }, [isEditable, text]);
 
   useEffect(() => {
     document.addEventListener('paste', handlePasteImage);
@@ -180,6 +190,7 @@ export default function ReviewClient({ note }: { note: ReleaseNoteDto }) {
           </div>
           {isEditable ? (
             <textarea
+              ref={textareaRef}
               value={text}
               onChange={(e) => setText(e.target.value)}
               className="w-full flex-1 min-h-[60vh] px-3.5 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-[#DDC444] focus:border-[#DDC444] leading-relaxed"
